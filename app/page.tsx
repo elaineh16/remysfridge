@@ -1,13 +1,21 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { Camera, Refrigerator, ChefHat } from "lucide-react"
+import { Camera, Refrigerator, ChefHat, BarChart3 } from "lucide-react"
 import { ReceiptScanTab } from "@/components/receipt-scan-tab"
 import { FridgeTab } from "@/components/fridge-tab"
 import { RecipesTab } from "@/components/recipes-tab"
+import { AnalyticsTab } from "@/components/analytics-tab"
 import type { FridgeItem, ScannedItem } from "@/lib/types"
 
-type Tab = "scan" | "fridge" | "recipes"
+type Tab = "scan" | "fridge" | "recipes" | "analytics"
+
+type ReceiptRecord = {
+  id: string
+  date: Date
+  items: ScannedItem[]
+  total: number
+}
 
 const INITIAL_FRIDGE_ITEMS: FridgeItem[] = [
   { id: "init-1", name: "Bananas", emoji: "🍌", quantity: 1, category: "Fruits", dateAdded: new Date() },
@@ -48,6 +56,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("scan")
   const [fridgeItems, setFridgeItems] = useState<FridgeItem[]>(INITIAL_FRIDGE_ITEMS)
   const [wasteSaved, setWasteSaved] = useState(47.50)
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>([])
 
   const handleAddToFridge = useCallback((items: ScannedItem[]) => {
     const newItems: FridgeItem[] = items.map(item => ({
@@ -72,8 +81,15 @@ export default function Home() {
       return merged
     })
 
-    // Add to waste saved (simulating value)
+    // Add to waste saved (simulating value) and record receipt
     const totalValue = items.reduce((sum: number, item: ScannedItem) => sum + item.price * item.quantity, 0)
+    const receipt: ReceiptRecord = {
+      id: `receipt-${Date.now()}`,
+      date: new Date(),
+      items,
+      total: totalValue,
+    }
+    setReceipts((prev) => [...prev, receipt])
     setWasteSaved((prev: number) => prev + totalValue * 0.3)
 
     setActiveTab("fridge")
@@ -97,6 +113,7 @@ export default function Home() {
     { id: "scan" as const, label: "Receipt scan", icon: Camera },
     { id: "fridge" as const, label: "My fridge", icon: Refrigerator },
     { id: "recipes" as const, label: "Recipes", icon: ChefHat },
+    { id: "analytics" as const, label: "Analytics", icon: BarChart3 },
   ]
 
   return (
@@ -107,7 +124,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-3xl">🧊</span>
-              <h1 className="text-2xl font-extrabold text-foreground tracking-tight">FridgeIQ</h1>
+              <h1 className="text-2xl font-extrabold text-foreground tracking-tight">Remy's Fridge</h1>
             </div>
             <div className="flex items-center gap-2 text-sm bg-primary/10 px-3 py-1.5 rounded-full">
               <span className="text-muted-foreground font-medium">Saved</span>
@@ -132,6 +149,13 @@ export default function Home() {
         )}
         {activeTab === "recipes" && (
           <RecipesTab fridgeItems={fridgeItems} />
+        )}
+        {activeTab === "analytics" && (
+          <AnalyticsTab
+            receipts={receipts}
+            wasteSaved={wasteSaved}
+            fridgeItems={fridgeItems}
+          />
         )}
       </main>
 

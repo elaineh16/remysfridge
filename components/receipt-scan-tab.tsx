@@ -43,6 +43,10 @@ export function ReceiptScanTab({ onAddToFridge }: ReceiptScanTabProps) {
   const [scannedItems, setScannedItems] = useState<ScannedItem[]>([])
   const [dragActive, setDragActive] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [manualName, setManualName] = useState("")
+  const [manualEmoji, setManualEmoji] = useState("")
+  const [manualPrice, setManualPrice] = useState("")
+  const [manualQuantity, setManualQuantity] = useState("1")
 
   const handleScan = useCallback(async (file: File) => {
     try {
@@ -74,7 +78,7 @@ export function ReceiptScanTab({ onAddToFridge }: ReceiptScanTabProps) {
               name: item.name,
               emoji: item.emoji ?? "🧺",
               price: Number(item.price) || 0,
-              quantity: Number(item.quantity) || 1,
+              quantity: Math.max(1, Math.round(Number(item.quantity) || 1)),
               selected: true,
             }))
           : DEMO_ITEMS
@@ -118,6 +122,29 @@ export function ReceiptScanTab({ onAddToFridge }: ReceiptScanTabProps) {
     [handleScan],
   )
 
+  const handleAddManualItem = () => {
+    const name = manualName.trim()
+    if (!name) return
+
+    const priceValue = parseFloat(manualPrice)
+    const quantityValue = Math.max(1, Math.round(Number(manualQuantity) || 1))
+
+    const newItem: ScannedItem = {
+      id: `manual-${Date.now()}`,
+      name,
+      emoji: manualEmoji.trim() || "🧺",
+      price: Number.isFinite(priceValue) ? priceValue : 0,
+      quantity: quantityValue,
+      selected: true,
+    }
+
+    setScannedItems((items) => [...items, newItem])
+    setManualName("")
+    setManualEmoji("")
+    setManualPrice("")
+    setManualQuantity("1")
+  }
+
   const toggleItem = (id: string) => {
     setScannedItems(items =>
       items.map(item =>
@@ -127,9 +154,10 @@ export function ReceiptScanTab({ onAddToFridge }: ReceiptScanTabProps) {
   }
 
   const updateQuantity = (id: string, quantity: number) => {
+    const intQuantity = Math.max(1, Math.round(quantity))
     setScannedItems(items =>
       items.map(item =>
-        item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item
+        item.id === id ? { ...item, quantity: intQuantity } : item
       )
     )
   }
@@ -148,72 +176,121 @@ export function ReceiptScanTab({ onAddToFridge }: ReceiptScanTabProps) {
   return (
     <div className="flex flex-col gap-6 pb-24">
       {/* Upload Area */}
-      {scannedItems.length === 0 && (
-        <div
-          className={`relative rounded-2xl border-2 border-dashed transition-all duration-300 ${
-            dragActive
-              ? "border-primary bg-primary/10"
-              : "border-border bg-card/50"
-          }`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
-            {scanning ? (
-              <>
-                <div className="relative">
-                  <div className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
-                  <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary/20">
-                    <Sparkles className="h-10 w-10 text-primary animate-pulse" />
-                  </div>
+      <div
+        className={`relative rounded-2xl border-2 border-dashed transition-all duration-300 ${
+          dragActive ? "border-primary bg-primary/10" : "border-border bg-card/50"
+        }`}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+      >
+        <div className="flex flex-col items-center justify-center gap-4 p-8 text-center">
+          {scanning ? (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-primary/20">
+                  <Sparkles className="h-10 w-10 text-primary animate-pulse" />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-lg font-medium text-foreground">
-                    AI is scanning your receipt...
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Identifying items and prices
-                  </p>
-                </div>
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </>
-            ) : (
-              <>
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                  <Camera className="h-10 w-10 text-muted-foreground" />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-lg font-medium text-foreground">
-                    Scan your grocery receipt
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Drag and drop an image or use the buttons below
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    variant="secondary"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload
-                  </Button>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </>
-            )}
-          </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-foreground">
+                  AI is scanning your receipt...
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Identifying items and prices
+                </p>
+              </div>
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </>
+          ) : (
+            <>
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                <Camera className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-foreground">
+                  Scan your grocery receipt
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Drag and drop an image or use the button below
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload
+                </Button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Manual Add Section */}
+      <Card className="p-4 space-y-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">Or add items manually</p>
+          <p className="text-xs text-muted-foreground">
+            Perfect for leftovers, pantry items, or things without a receipt.
+          </p>
+        </div>
+        <div className="grid grid-cols-[1.5fr,0.75fr,0.75fr,auto] gap-2 items-end">
+          <div className="space-y-1">
+            <label className="block text-xs text-muted-foreground">Item name</label>
+            <Input
+              placeholder="e.g. Bananas"
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-xs text-muted-foreground">Price</label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="2.49"
+              value={manualPrice}
+              onChange={(e) => setManualPrice(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="block text-xs text-muted-foreground">Qty</label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              step={1}
+              value={manualQuantity}
+              onChange={(e) =>
+                setManualQuantity(e.target.value.replace(/[^0-9]/g, "") || "1")
+              }
+            />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="whitespace-nowrap"
+            onClick={handleAddManualItem}
+            disabled={!manualName.trim()}
+          >
+            Add item
+          </Button>
+        </div>
+      </Card>
 
       {/* Scanned Items */}
       {scannedItems.length > 0 && (
@@ -270,8 +347,14 @@ export function ReceiptScanTab({ onAddToFridge }: ReceiptScanTabProps) {
                   </Button>
                   <Input
                     type="number"
+                    inputMode="numeric"
+                    step={1}
+                    min={1}
                     value={item.quantity}
-                    onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const next = Number(e.target.value.replace(/[^0-9]/g, "")) || 1
+                      updateQuantity(item.id, next)
+                    }}
                     className="w-12 text-center h-8 px-1"
                   />
                   <Button

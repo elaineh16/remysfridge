@@ -115,14 +115,8 @@ export function FridgeTab({ items, onUpdateItem, onRemoveItem, wasteSaved }: Fri
                         ? "border-warning bg-warning/10"
                         : "bg-card hover:bg-muted"
                     } ${isSelected ? "ring-2 ring-primary" : ""}`}
+                    
                   >
-                    {item.quantity <= 1 && (
-                      <Badge 
-                        className="absolute top-1.5 right-1.5 h-5 w-5 p-0 flex items-center justify-center bg-warning text-warning-foreground text-xs z-10"
-                      >
-                        !
-                      </Badge>
-                    )}
                     
                     {/* Item Content - Always Visible */}
                     <div className="flex flex-col items-center justify-center p-3 pt-4">
